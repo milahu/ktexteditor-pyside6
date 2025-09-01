@@ -4,6 +4,8 @@
 
     <load-typesystem name="typesystem_core.xml" generate="no" />
 
+    <load-typesystem name="typesystem_widgets.xml" generate="no"/>
+
     <!-- Root namespace for KTextEditor -->
     <namespace-type name="KTextEditor">
 
