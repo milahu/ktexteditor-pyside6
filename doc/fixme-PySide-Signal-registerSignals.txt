@@ -1,0 +1,123 @@
+Running phase: qtPreHook
+@nix { "action": "setPhase", "phase": "qtPreHook" }
+Running phase: unpackPhase
+@nix { "action": "setPhase", "phase": "unpackPhase" }
+kdePackages.extra-cmake-modules = /nix/store/knscv8d09b7zdf3c6civ5741ri98vbnk-extra-cmake-modules-6.15.0
+python3.pkgs.shiboken6 = /nix/store/pv1lamnnkcvvx459ippl8jlfmkqv6w72-shiboken6-6.9.1
+python3.pkgs.pyside6 = /nix/store/bmqq1d1vvbvjy1mgw1535hgd2xyc0klr-pyside6-6.9.1
+unpacking source archive /nix/store/v8x6v9k7kv286mp86m3s8rcncdnk9afz-ktexteditor-pyside6-binding
+source root is ktexteditor-pyside6-binding
+Running phase: patchPhase
+@nix { "action": "setPhase", "phase": "patchPhase" }
+Running phase: updateAutotoolsGnuConfigScriptsPhase
+@nix { "action": "setPhase", "phase": "updateAutotoolsGnuConfigScriptsPhase" }
+Running phase: configurePhase
+@nix { "action": "setPhase", "phase": "configurePhase" }
+fixing cmake files...
+cmake flags: -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_INSTALL_LOCALEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/locale -DCMAKE_INSTALL_LIBEXECDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/libexec -DCMAKE_INSTALL_LIBDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib -DCMAKE_INSTALL_DOCDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/doc/KTextEditorPythonBindings -DCMAKE_INSTALL_INFODIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/info -DCMAKE_INSTALL_MANDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/man -DCMAKE_INSTALL_INCLUDEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/include -DCMAKE_INSTALL_SBINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/sbin -DCMAKE_INSTALL_BINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/bin -DCMAKE_INSTALL_NAME_DIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib -DCMAKE_POLICY_DEFAULT_CMP0025=NEW -DCMAKE_FIND_FRAMEWORK=LAST -DCMAKE_STRIP=/nix/store/3awwcrqv9lpcq553zs2zb7y0mr5niswd-clang-wrapper-19.1.7/bin/strip -DCMAKE_RANLIB=/nix/store/3awwcrqv9lpcq553zs2zb7y0mr5niswd-clang-wrapper-19.1.7/bin/ranlib -DCMAKE_AR=/nix/store/3awwcrqv9lpcq553zs2zb7y0mr5niswd-clang-wrapper-19.1.7/bin/ar -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_INSTALL_PREFIX=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1 -DCMAKE_MODULE_PATH=/nix/store/knscv8d09b7zdf3c6civ5741ri98vbnk-extra-cmake-modules-6.15.0/share/ECM/modules -DKDE_INSTALL_EXECROOTDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1 -DKDE_INSTALL_BINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/bin -DKDE_INSTALL_SBINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/sbin -DKDE_INSTALL_LIBDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib -DKDE_INSTALL_LIBEXECDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/libexec -DKDE_INSTALL_CMAKEPACKAGEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/cmake -DKDE_INSTALL_QTPLUGINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/qt-6/plugins -DKDE_INSTALL_PLUGINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/qt-6/plugins -DKDE_INSTALL_QMLDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/qt-6/qml -DKDE_INSTALL_INCLUDEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/include -DKDE_INSTALL_LOCALSTATEDIR=/var -DKDE_INSTALL_SHAREDSTATEDIR=/com -DKDE_INSTALL_DATAROOTDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share -DKDE_INSTALL_DATADIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share -DKDE_INSTALL_DOCBUNDLEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/doc/HTML -DKDE_INSTALL_KCFGDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/config.kcfg -DKDE_INSTALL_KCONFUPDATEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kconf_update -DKDE_INSTALL_KAPPTEMPLATESDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kdevappwizard/templates -DKDE_INSTALL_KFILETEMPLATESDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kdevfiletemplates/templates -DKDE_INSTALL_KXMLGUIDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kxmlgui5 -DKDE_INSTALL_KNOTIFYRCDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/knotifications6 -DKDE_INSTALL_ICONDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/icons -DKDE_INSTALL_LOCALEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/locale -DKDE_INSTALL_SOUNDDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/sounds -DKDE_INSTALL_TEMPLATEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/templates -DKDE_INSTALL_WALLPAPERDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/wallpapers -DKDE_INSTALL_APPDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/applications -DKDE_INSTALL_DESKTOPDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/desktop-directories -DKDE_INSTALL_MIMEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/mime/packages -DKDE_INSTALL_METAINFODIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/metainfo -DKDE_INSTALL_QTQCHDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/doc/qch -DKDE_INSTALL_QCHDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/doc/qch -DKDE_INSTALL_MANDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/man -DKDE_INSTALL_INFODIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/info -DKDE_INSTALL_DBUSDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1 -DKDE_INSTALL_DBUSINTERFACEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1/interfaces -DKDE_INSTALL_DBUSSERVICEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1/services -DKDE_INSTALL_DBUSSYSTEMSERVICEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1/system-services -DKDE_INSTALL_SYSCONFDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/etc -DKDE_INSTALL_CONFDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/etc/xdg -DKDE_INSTALL_AUTOSTARTDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/etc/xdg/autostart -DKDE_INSTALL_LOGGINGCATEGORIESDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/qlogging-categories6 -DKDE_INSTALL_SYSTEMDUNITDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/systemd -DKDE_INSTALL_SYSTEMDUSERUNITDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/systemd/user -DKDE_INSTALL_EXECROOTDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1 -DKDE_INSTALL_BINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/bin -DKDE_INSTALL_SBINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/sbin -DKDE_INSTALL_LIBDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib -DKDE_INSTALL_LIBEXECDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/libexec -DKDE_INSTALL_CMAKEPACKAGEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/cmake -DKDE_INSTALL_QTPLUGINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/qt-6/plugins -DKDE_INSTALL_PLUGINDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/qt-6/plugins -DKDE_INSTALL_QMLDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/qt-6/qml -DKDE_INSTALL_INCLUDEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/include -DKDE_INSTALL_LOCALSTATEDIR=/var -DKDE_INSTALL_SHAREDSTATEDIR=/com -DKDE_INSTALL_DATAROOTDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share -DKDE_INSTALL_DATADIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share -DKDE_INSTALL_DOCBUNDLEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/doc/HTML -DKDE_INSTALL_KCFGDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/config.kcfg -DKDE_INSTALL_KCONFUPDATEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kconf_update -DKDE_INSTALL_KAPPTEMPLATESDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kdevappwizard/templates -DKDE_INSTALL_KFILETEMPLATESDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kdevfiletemplates/templates -DKDE_INSTALL_KXMLGUIDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/kxmlgui5 -DKDE_INSTALL_KNOTIFYRCDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/knotifications6 -DKDE_INSTALL_ICONDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/icons -DKDE_INSTALL_LOCALEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/locale -DKDE_INSTALL_SOUNDDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/sounds -DKDE_INSTALL_TEMPLATEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/templates -DKDE_INSTALL_WALLPAPERDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/wallpapers -DKDE_INSTALL_APPDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/applications -DKDE_INSTALL_DESKTOPDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/desktop-directories -DKDE_INSTALL_MIMEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/mime/packages -DKDE_INSTALL_METAINFODIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/metainfo -DKDE_INSTALL_QTQCHDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/doc/qch -DKDE_INSTALL_QCHDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/doc/qch -DKDE_INSTALL_MANDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/man -DKDE_INSTALL_INFODIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/info -DKDE_INSTALL_DBUSDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1 -DKDE_INSTALL_DBUSINTERFACEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1/interfaces -DKDE_INSTALL_DBUSSERVICEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1/services -DKDE_INSTALL_DBUSSYSTEMSERVICEDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/dbus-1/system-services -DKDE_INSTALL_SYSCONFDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/etc -DKDE_INSTALL_CONFDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/etc/xdg -DKDE_INSTALL_AUTOSTARTDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/etc/xdg/autostart -DKDE_INSTALL_LOGGINGCATEGORIESDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/qlogging-categories6 -DKDE_INSTALL_SYSTEMDUNITDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/lib/systemd -DKDE_INSTALL_SYSTEMDUSERUNITDIR=/nix/store/v26ymgsy8w3ikmpvc8gcr1spqc7gdsby-ktexteditor-pyside6-0.0.1/share/systemd/user
+-- The CXX compiler identification is Clang 19.1.7
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /nix/store/3awwcrqv9lpcq553zs2zb7y0mr5niswd-clang-wrapper-19.1.7/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found Python3: /nix/store/wpzb7w27n568f1jancwk3zc7jgddlacg-python3-3.13.4-env/bin/python3.13 (found version "3.13.4") found components: Interpreter Development Development.Module Development.Embed
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Performing Test HAVE_STDATOMIC
+-- Performing Test HAVE_STDATOMIC - Success
+-- Found WrapAtomic: TRUE
+-- Found OpenGL: /nix/store/3cic5m22knb2y20fb90y0l0r8sw41mdk-libglvnd-1.7.0/lib/libOpenGL.so
+-- Found WrapOpenGL: TRUE
+-- Found WrapVulkanHeaders: /nix/store/xyj79wiqj7ww9rqb4avjc8slvpl4lc8p-vulkan-headers-1.4.313.0/include
+-- Found X11: /nix/store/h2lzzms7vnqv9rv11wynjjd5sfnk0ijx-xorgproto-2024.1/include
+-- Looking for XOpenDisplay in /nix/store/26c0x3gh2g5dpczvjxgjzn0mc22zxpjz-libX11-1.8.12/lib/libX11.so;/nix/store/dsyfksqh9yymcp3j8d72yw6j960n7wpv-libXext-1.3.6/lib/libXext.so
+-- Looking for XOpenDisplay in /nix/store/26c0x3gh2g5dpczvjxgjzn0mc22zxpjz-libX11-1.8.12/lib/libX11.so;/nix/store/dsyfksqh9yymcp3j8d72yw6j960n7wpv-libXext-1.3.6/lib/libXext.so - found
+-- Looking for gethostbyname
+-- Looking for gethostbyname - found
+-- Looking for connect
+-- Looking for connect - found
+-- Looking for remove
+-- Looking for remove - found
+-- Looking for shmat
+-- Looking for shmat - found
+-- Shiboken6Config: Using default python: .abi3
+-- Found Python: /nix/store/wpzb7w27n568f1jancwk3zc7jgddlacg-python3-3.13.4-env/bin/python3.13 (found suitable version "3.13.4", minimum required is "3") found components: Interpreter Development Development.Module Development.Embed
+-- PYTHON_LIMITED_LIBRARIES: 
+-- SHIBOKEN_PYTHON_INCLUDE_DIRS computed to value: '/nix/store/sd81bvmch7njdpwx3lkjslixcbj5mivz-python3-3.13.4/include/python3.13'
+-- SHIBOKEN_PYTHON_LIBRARIES computed to value: ''
+-- libshiboken built for Release
+-- Configuring done (6.6s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    BUILD_TESTING
+    CMAKE_C_COMPILER
+    CMAKE_EXPORT_NO_PACKAGE_REGISTRY
+    CMAKE_POLICY_DEFAULT_CMP0025
+
+
+-- Build files have been written to: /build/ktexteditor-pyside6-binding/build
+cmake: enabled parallel building
+cmake: enabled parallel installing
+Running phase: buildPhase
+@nix { "action": "setPhase", "phase": "buildPhase" }
+build flags: -j6 SHELL=/nix/store/00zrahbb32nzawrmv9sjxn36h7qk9vrs-bash-5.2p37/bin/bash
+[ 12%] Running generator for /build/ktexteditor-pyside6-binding/bindings.xml
+(bindings) Clang: 1 diagnostic messages:
+  /nix/store/sq22bzrdp5smnvqrl7v66mrc31vzdjzw-syntax-highlighting-6.15.0-dev/include/KF6/KSyntaxHighlighting/KSyntaxHighlighting/theme.h:140:25: warning: '/*' within block comment
+   /build/bindings_TdTgEX.hpp:1:10: note: in file included from /build/bindings_TdTgEX.hpp:1:
+   /build/ktexteditor-pyside6-binding/bindings.h:3:10: note: in file included from /build/ktexteditor-pyside6-binding/bindings.h:3:
+   /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/KTextEditor/Editor:1:10: note: in file included from /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/KTextEditor/Editor:1:
+   /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/editor.h:17:10: note: in file included from /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/editor.h:17:
+   /nix/store/sq22bzrdp5smnvqrl7v66mrc31vzdjzw-syntax-highlighting-6.15.0-dev/include/KF6/KSyntaxHighlighting/KSyntaxHighlighting/Theme:1:10: note: in file included from /nix/store/sq22bzrdp5smnvqrl7v66mrc31vzdjzw-syntax-highlighting-6.15.0-dev/include/KF6/KSyntaxHighlighting/KSyntaxHighlighting/Theme:1:
+
+
+(bindings) [3259ms] Generated class model (467).                                [WARNING]
+(bindings) [3259ms] Generated enum model (6).                                   [OK]
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/document.h:65: Enum 'KTextEditor::SearchOption' (class: KTextEditor) does not have a type entry (type systems: KTextEditor, PySide6.QtCore)
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/document.h:1644: Enum 'KTextEditor::Document::ModifiedOnDiskReason' (class: KTextEditor::Document) does not have a type entry (type systems: KTextEditor, PySide6.QtCore)
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/document.h:1834: Enum 'KTextEditor::Document::MarkTypes' (class: KTextEditor::Document) does not have a type entry (type systems: KTextEditor, PySide6.QtCore)
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/document.h:1958: Enum 'KTextEditor::Document::MarkChangeAction' (class: KTextEditor::Document) does not have a type entry (type systems: KTextEditor, PySide6.QtCore)
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/view.h:372: Enum 'KTextEditor::View::InputMode' (class: KTextEditor::View) does not have a type entry (type systems: KTextEditor, PySide6.QtCore)
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/view.h:393: Enum 'KTextEditor::View::ViewMode' (class: KTextEditor::View) does not have a type entry (type systems: KTextEditor, PySide6.QtCore)
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/view.h:416: Enum 'KTextEditor::View::LineType' (class: KTextEditor::View) does not have a type entry (type systems: KTextEditor, PySide6.QtCore)
+(bindings) [3262ms] Generated namespace model (178).                            [WARNING]
+qt.shiboken: (bindings) template baseclass 'QCborStreamReader::StringResult<QByteArray>' of 'QCborStringResultByteArray' is not known
+qt.shiboken: (bindings) template baseclass 'QCborStreamReader::StringResult<QString>' of 'QCborStringResultString' is not known
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/view.h:1046: Stripping argument #1 of int KTextEditor::View::firstDisplayedLine(KTextEditor::View::LineType)const due to unmatched type "KTextEditor::View::LineType" with default expression "RealLine": Unable to translate type "KTextEditor::View::LineType": Cannot find type entry for "KTextEditor::View::LineType".
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/view.h:1064: Stripping argument #1 of int KTextEditor::View::lastDisplayedLine(KTextEditor::View::LineType)const due to unmatched type "KTextEditor::View::LineType" with default expression "RealLine": Unable to translate type "KTextEditor::View::LineType": Cannot find type entry for "KTextEditor::View::LineType".
+(bindings) [3335ms] Resolved typedefs (148).                                    [WARNING]
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/document.h:328: Base class 'KParts::ReadWritePart' of class 'Document' not found in the type system for setting up inheritance.
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/view.h:320: Base class 'QWidget' of class 'View' not found in the type system for setting up inheritance.
+(bindings) [3335ms] Fixed class inheritance.                                    [WARNING]
+(bindings) [3343ms] Checked for inconsistencies in class model.                 [OK]
+qt.shiboken: (bindings) /build/ktexteditor-pyside6-binding/bindings.xml:27: enum 'KTextEditor::EditorOption' is specified in typesystem, but not declared.
+(bindings) [3372ms] Checked for inconsistencies in typesystem (3129).           [WARNING]
+(bindings) [3372ms] Checked for inconsistencies in function modifications.      [OK]
+(bindings) [3376ms] Wrote log files.                                            [OK]
+qt.shiboken: (bindings) /nix/store/9w6xly1fa14w62q3bj31794zqa1sqgs8-ktexteditor-6.15.0-dev/include/KF6/KTextEditor/ktexteditor/view.h:1000: There's no user provided way (conversion rule, argument removal, custom code, etc) to handle the primitive type 'QVariant *' of argument 2 in function 'KTextEditor::View::evaluateScript(const QString &script, QVariant *result)'.
+(bindings) [3403ms] Ran Source generator.                                       [WARNING]
+(bindings) [3405ms] Ran Header generator.                                       [OK]
+Done, (bindings) 3405ms, 16 warnings (100 known issues)
+[ 37%] Building CXX object CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_module_wrapper.cpp.o
+[ 37%] Building CXX object CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_editor_wrapper.cpp.o
+[ 62%] Building CXX object CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_wrapper.cpp.o
+[ 62%] Building CXX object CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_document_wrapper.cpp.o
+[ 75%] Building CXX object CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_cursor_wrapper.cpp.o
+[ 87%] Building CXX object CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_view_wrapper.cpp.o
+/build/ktexteditor-pyside6-binding/build/KTextEditor/ktexteditor_view_wrapper.cpp:2896:13: error: no member named 'Signal' in namespace 'PySide'
+ 2896 |     PySide::Signal::registerSignals(pyType, &::KTextEditor::View::staticMetaObject);
+      |     ~~~~~~~~^
+/build/ktexteditor-pyside6-binding/build/KTextEditor/ktexteditor_document_wrapper.cpp:4377:13: error: no member named 'Signal' in namespace 'PySide'
+ 4377 |     PySide::Signal::registerSignals(pyType, &::KTextEditor::Document::staticMetaObject);
+      |     ~~~~~~~~^
+1 error generated.
+make[2]: *** [CMakeFiles/KTextEditor.dir/build.make:155: CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_view_wrapper.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+1 error generated.
+make[2]: *** [CMakeFiles/KTextEditor.dir/build.make:141: CMakeFiles/KTextEditor.dir/KTextEditor/ktexteditor_document_wrapper.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:87: CMakeFiles/KTextEditor.dir/all] Error 2
+make: *** [Makefile:136: all] Error 2
