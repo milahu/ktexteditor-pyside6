@@ -67,6 +67,7 @@ stdenv.mkDerivation {
     (python3.withPackages (pp: with pp; [
       # shiboken6
       shiboken6_patched
+      shiboken6-generator
       # pyside6
       pyside6_patched
       # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
