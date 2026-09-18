@@ -15,10 +15,20 @@
 
         <!-- Document class -->
         <object-type name="Document">
+            <extra-includes>
+                <include file-name="pysidesignal.h" location="global"/>
+            </extra-includes>
+        </object-type>
+
+        <!-- MainWindow class -->
+        <object-type name="MainWindow">
         </object-type>
 
         <!-- View class -->
         <object-type name="View">
+            <extra-includes>
+                <include file-name="pysidesignal.h" location="global"/>
+            </extra-includes>
         </object-type>
 
         <!-- Cursor class -->

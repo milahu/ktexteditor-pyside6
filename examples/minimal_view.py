@@ -8,7 +8,7 @@ def main():
     app = QApplication([])
 
     # Get the singleton editor and make a document + view
-    editor = KTextEditor.Editor.instance()
+    editor = KTextEditor.KTextEditor.Editor.instance()
     doc = editor.createDocument(None)  # parent=None, managed by Qt parent later
     doc.setText("Hello from PySide6 + KTextEditor!\n\nThis is a minimal binding skeleton.")
 

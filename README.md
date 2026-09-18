@@ -5,6 +5,7 @@ This is a **minimal Shiboken/PySide6 binding skeleton** for the KDE Frameworks
 - `KTextEditor::Editor` (singleton access)
 - `KTextEditor::Document`
 - `KTextEditor::View` (a QWidget)
+- `KTextEditor::MainWindow`
 
 The project follows Qt for Python's *Sample Bindings* structure and uses the
 shiboken generator invoked from CMake.
@@ -55,7 +56,7 @@ This will place the built Python module next to the sources (for convenience).
 ## Try it
 
 ```bash
-python examples/minimal_view.py
+PYTHONPATH=build/KTextEditor/build/lib python examples/minimal_view.py
 ```
 
 A window should show a KTextEditor view with some text.

@@ -4,6 +4,8 @@
 
 cmake_minimum_required(VERSION 3.16)
 project(KTextEditorPythonBindings LANGUAGES CXX)
+set(REQUIRED_QT_VERSION "6.11.0")
+set(KF_VERSION "6.30.0")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,6 +35,7 @@ set(generated_sources
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_editor_wrapper.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_document_wrapper.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_view_wrapper.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_mainwindow_wrapper.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_cursor_wrapper.cpp
     # TODO more?
 )
