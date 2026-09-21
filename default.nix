@@ -1,56 +1,84 @@
 {
-  pkgs ? import <nixpkgs> { }
+  lib,
+  buildPythonPackage,
+  fetchFromGitHub,
+  python,
+  cmake,
+  ninja,
+  scikit-build-core,
+  build,
+  setuptools,
+  pyside6,
+  shiboken6,
+  qt6,
+  kdePackages,
 }:
 
-with pkgs;
-
 let
-  shiboken6 = python3.pkgs.shiboken6;
-  pyside6 = python3.pkgs.pyside6;
+  pythonEnv = python.withPackages (ps: [
+    build
+    pyside6
+    shiboken6
+  ]);
 in
 
-# FIXME ktexteditor-pyside6 should be a python package with a pyproject.toml file
-# buildPythonPackage {
-#   format = "pyproject";
-
-# clangStdenv.mkDerivation {
-stdenv.mkDerivation {
+buildPythonPackage {
   pname = "ktexteditor-pyside6";
-  version = "0.0.1";
+  version = "0.1.0";
+
   src = ./.;
+  # TODO
+  /*
+  src = fetchFromGitHub {
+    owner = "milahu";
+    repo = "ktexteditor-pyside6";
+    tag = "";
+    hash = "";
+  };
+  */
+
+  pyproject = true;
+
   nativeBuildInputs = [
     cmake
+    ninja # for scikit-build-core
     kdePackages.extra-cmake-modules # ECMGeneratePythonBindings.cmake
-    (python3.withPackages (pp: with pp; [
-      # shiboken6
-      shiboken6
-      shiboken6-generator
-      # pyside6
-      pyside6
-      # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
-      build
-      # fix: ERROR Backend 'setuptools.build_meta:__legacy__' is not available.
-      setuptools
-    ]))
+    scikit-build-core
+    shiboken6
+    # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
+    build
+    setuptools
+    # make cmake use this python env
+    # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
+    # TODO better?
+    pythonEnv
   ];
+
+  dependencies = [
+    pyside6
+  ];
+
   buildInputs = [
     qt6.qtbase
-    qt6.qtbase.dev
     kdePackages.ktexteditor
-    glibc_multi # stdc-predef.h stdlib.h ...
   ];
+
+  dontWrapQtApps = true;
+
+  dontUseCmakeConfigure = true;
+  dontUseCmakeBuild = true;
+  dontUseCmakeInstall = true;
+
   # help cmake find ${kdePackages.extra-cmake-modules}/share/ECM/modules/ECMGeneratePythonBindings.cmake
   cmakeFlags = [
     "-DCMAKE_MODULE_PATH=${kdePackages.extra-cmake-modules}/share/ECM/modules"
     # "-DKDE_EXTRA_CMAKE_MODULES=${kdePackages.extra-cmake-modules}/share/ECM/modules"
+
+    # make cmake use this python env
+    # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
+    # TODO better?
+    "-DPython3_EXECUTABLE=${pythonEnv}/bin/python"
+    "-DPython_EXECUTABLE=${pythonEnv}/bin/python"
+    "-DCMAKE_MODULE_PATH=${kdePackages.extra-cmake-modules}/share/ECM/modules"
   ];
-  dontWrapQtApps = true;
-  postInstall = ''
-    mkdir -p $out/${pkgs.python3.sitePackages}
-    mv -v $out/lib/python-kf6/KTextEditor.cpython-*.so $out/${pkgs.python3.sitePackages}
-    rmdir $out/lib/python-kf6
-  '';
-  # enableParallelBuilding = false; # debug
-  # preBuild = "set -x"; # debug
-  # makeFlags = [ "-d" ]; # debug
 }
