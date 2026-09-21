@@ -4,12 +4,38 @@
 
 cmake_minimum_required(VERSION 3.16)
 project(KTextEditorPythonBindings LANGUAGES CXX)
+set(REQUIRED_QT_VERSION "6.11.0")
+set(KF_VERSION "6.30.0")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+
 # Find Python3
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+# find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+# TODO Python3 -> Python
+# find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+
+message(STATUS "Python executable: ${Python3_EXECUTABLE}")
+
+execute_process(
+    COMMAND "${Python3_EXECUTABLE}" -c "import build; print(build.__file__)"
+    RESULT_VARIABLE PYTHON_BUILD_RESULT
+    OUTPUT_VARIABLE PYTHON_BUILD_LOCATION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT PYTHON_BUILD_RESULT EQUAL 0)
+    message(FATAL_ERROR
+        "Python interpreter ${Python3_EXECUTABLE} cannot import the 'build' module"
+    )
+endif()
+
+message(STATUS "Python 'build' module: ${PYTHON_BUILD_LOCATION}")
+
+
 
 # Find Qt, KF6, Shiboken
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
@@ -33,6 +59,7 @@ set(generated_sources
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_editor_wrapper.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_document_wrapper.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_view_wrapper.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_mainwindow_wrapper.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_cursor_wrapper.cpp
     # TODO more?
 )
@@ -67,4 +94,8 @@ target_include_directories(${bindings_library}
         ${CMAKE_BINARY_DIR}  # where the generated *_python.h files live
 )
 
-install(TARGETS ${bindings_library} LIBRARY DESTINATION "${KDE_INSTALL_LIBDIR}/python-kf6")
+install(
+    TARGETS ${bindings_library}
+    # LIBRARY DESTINATION KTextEditor
+    LIBRARY DESTINATION .
+)

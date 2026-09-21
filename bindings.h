@@ -3,3 +3,4 @@
 #include <KTextEditor/Editor>
 #include <KTextEditor/Document>
 #include <KTextEditor/View>
+#include <KTextEditor/MainWindow>
