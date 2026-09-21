@@ -9,6 +9,10 @@ let
   pyside6 = python3.pkgs.pyside6;
 in
 
+# FIXME ktexteditor-pyside6 should be a python package with a pyproject.toml file
+# buildPythonPackage {
+#   format = "pyproject";
+
 # clangStdenv.mkDerivation {
 stdenv.mkDerivation {
   pname = "ktexteditor-pyside6";
@@ -41,6 +45,11 @@ stdenv.mkDerivation {
     # "-DKDE_EXTRA_CMAKE_MODULES=${kdePackages.extra-cmake-modules}/share/ECM/modules"
   ];
   dontWrapQtApps = true;
+  postInstall = ''
+    mkdir -p $out/${pkgs.python3.sitePackages}
+    mv -v $out/lib/python-kf6/KTextEditor.cpython-*.so $out/${pkgs.python3.sitePackages}
+    rmdir $out/lib/python-kf6
+  '';
   # enableParallelBuilding = false; # debug
   # preBuild = "set -x"; # debug
   # makeFlags = [ "-d" ]; # debug
