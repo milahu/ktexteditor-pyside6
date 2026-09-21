@@ -25,6 +25,8 @@ stdenv.mkDerivation {
       pyside6
       # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
       build
+      # fix: ERROR Backend 'setuptools.build_meta:__legacy__' is not available.
+      setuptools
     ]))
   ];
   buildInputs = [
