@@ -2,8 +2,8 @@
 
 **User:** Anonymous  
 **Created:** 2025/8/31 20:09:45  
-**Updated:** 2025/9/1 17:46:31  
-**Exported:** 2026/9/21 9:28:13  
+**Updated:** 2026/9/21 10:49:18  
+**Exported:** 2026/9/21 10:54:44  
 **Link:** [<https://chatgpt.com/c/68b48fdb-5ed4-832d-876d-88cbc1e2af1d>](https://chatgpt.com/c/68b48fdb-5ed4-832d-876d-88cbc1e2af1d)
 
 ## Prompt:
@@ -3199,6 +3199,1244 @@ inside the `<value-type>` or `<namespace-type>`.
 ------------------------------------------------------------------------
 
 Would you like me to clean up your `bindings.xml` into a “production-ready” version that handles QObject classes, nested enums, and includes automatically? That way you’d avoid most of the common runtime crashes when you actually try to use the bindings.
+
+## Prompt:
+
+9/21/2026, 10:03:33 AM
+
+good news! apparently someone has managed to fix our code in <https://github.com/milahu/ktexteditor-pyside6/pull/2>
+
+i can confirm that the build is working now, but now i cannot use it on runtime from a nix-shell
+
+i have added some commits in <https://github.com/milahu/ktexteditor-pyside6/tree/pull2a> trying to fix default.nix to produce a python package, which then should work with this `shell.nix` file
+
+    { pkgs ? import <nixpkgs> {} }:
+
+    with pkgs;
+
+    let
+      ktexteditor-pyside6 = python3.pkgs.callPackage ./default.nix { };
+    in
+
+    mkShell {
+      buildInputs = [
+        (python3.withPackages (pp: with pp; [
+          ktexteditor-pyside6
+        ]))
+      ];
+    }
+
+but currently, in that nix-shell i get the error
+
+    $ python -c "import KTextEditor"
+    Traceback (most recent call last):
+      File "<string>", line 1, in <module>
+        import KTextEditor
+    ModuleNotFoundError: No module named 'KTextEditor'
+
+so now i want to turn this cmake-based project into a proper python package with a pyproject.toml file, so i can build it with the python3.pkgs.buildPythonPackage function from nixpkgs
+
+generate such a pyproject.toml file
+
+## Response:
+
+9/21/2026, 10:03:34 AM
+
+Yes. Given that the project is **CMake + Shiboken6**, I would not try to make `pyproject.toml` drive the CMake build directly. Instead, use the PEP 517 `scikit-build-core` backend, which is designed precisely for Python packages whose native extension is built by CMake.
+
+Assuming your repository already has a working `CMakeLists.txt`, I'd start with this:
+
+\*\*document: \*\*
+
+\[build-system\]  
+requires = \[  
+"scikit-build-core",  
+\]  
+build-backend = "scikit_build_core.build"
+
+\[project\]  
+name = "ktexteditor-pyside6"  
+version = "0.1.0"  
+description = "PySide6 bindings for KDE KTextEditor"  
+requires-python = "\>=3.10"
+
+\[tool.scikit-build\]  
+cmake.version = "\>=3.18"  
+build-dir = "build/{wheel_tag}"  
+wheel.packages = \["KTextEditor"\]  
+install.components = \["python"\]
+
+\[tool.scikit-build.cmake\]  
+build-type = "Release"
+
+However, there is one **important issue** with this particular project: the generated `KTextEditor` Python module is presumably produced by CMake/Shiboken, rather than existing as a normal Python source directory. Therefore:
+
+``` toml
+wheel.packages = ["KTextEditor"]
+```
+
+is probably **not what we ultimately want**.
+
+Instead, I recommend making the CMake install step authoritative. Your CMake should install the generated Python module into the Python `site-packages` directory, and then `scikit-build-core` will put that installed tree into the wheel.
+
+So the cleaner version is:
+
+\*\*document: \*\*
+
+\[build-system\]  
+requires = \[  
+"scikit-build-core",  
+\]  
+build-backend = "scikit_build_core.build"
+
+\[project\]  
+name = "ktexteditor-pyside6"  
+version = "0.1.0"  
+description = "PySide6 bindings for KDE KTextEditor"  
+requires-python = "\>=3.10"  
+dependencies = \[  
+"PySide6",  
+\]
+
+\[tool.scikit-build\]  
+cmake.version = "\>=3.18"  
+build-dir = "build/{wheel_tag}"
+
+\[tool.scikit-build.cmake\]  
+build-type = "Release"
+
+### The crucial part: CMake installation
+
+For this to work with:
+
+``` nix
+python3.pkgs.buildPythonPackage ./default.nix
+```
+
+your CMake needs to install the generated Python package.
+
+For example, if Shiboken generates:
+
+``` text
+build/KTextEditor/
+├── KTextEditor/
+│   ├── __init__.py
+│   ├── KTextEditor.abi3.so
+│   └── ...
+```
+
+then CMake should have something along these lines:
+
+``` cmake
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c
+            "import sysconfig; print(sysconfig.get_path('platlib'))"
+    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+install(
+    DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/"
+    DESTINATION "${PYTHON_SITE_PACKAGES}/KTextEditor"
+)
+```
+
+But **don't hard-code `platlib` if we can avoid it**. `scikit-build-core` has mechanisms for Python installation locations, and Nix's `buildPythonPackage` also has its own expectations.
+
+The ideal end state is:
+
+``` text
+ktexteditor-pyside6/
+├── CMakeLists.txt
+├── pyproject.toml
+├── bindings/
+│   ├── bindings.h
+│   └── bindings.xml
+└── ...
+```
+
+and:
+
+``` bash
+python -m build
+```
+
+produces:
+
+``` text
+dist/
+└── ktexteditor_pyside6-0.1.0-...whl
+```
+
+with the wheel containing:
+
+``` text
+KTextEditor/
+    __init__.py
+    KTextEditor.abi3.so
+    ...
+```
+
+Then the Nix side becomes pleasantly small:
+
+``` nix
+{ lib
+, python3Packages
+, ...
+}:
+
+python3Packages.buildPythonPackage {
+  pname = "ktexteditor-pyside6";
+  version = "0.1.0";
+
+  src = ./.;
+
+  pyproject = true;
+
+  nativeBuildInputs = with python3Packages; [
+    scikit-build-core
+    cmake
+    ninja
+    shiboken6
+  ];
+
+  dependencies = with python3Packages; [
+    pyside6
+  ];
+
+  buildInputs = [
+    kdePackages.ktexteditor
+    qt6.qtbase
+  ];
+}
+```
+
+And your `shell.nix` can then remain essentially as you proposed:
+
+``` nix
+{ pkgs ? import <nixpkgs> {} }:
+
+with pkgs;
+
+let
+  ktexteditor-pyside6 =
+    python3.pkgs.callPackage ./default.nix {};
+in
+
+mkShell {
+  packages = [
+    (python3.withPackages (pp: [
+      ktexteditor-pyside6
+    ]))
+  ];
+}
+```
+
+The **next thing I'd inspect is your current `CMakeLists.txt` from PR \#2**, specifically its `add_custom_command()` and `install()` sections. That's where we need to connect the generated Shiboken output to the Python wheel correctly. If you paste that current `CMakeLists.txt`, I can give you the corresponding `pyproject.toml` **and** the minimal CMake changes rather than guessing the generated directory layout.
+
+## Prompt:
+
+9/21/2026, 10:09:43 AM
+
+here is the current CMakeLists.txt
+
+    # based on
+    # https://alcarazzam.dev/posts/generate-python-bindings-shiboken/
+    # https://github.com/KDE/labplot/blob/master/lib/python/CMakeLists.txt
+
+    cmake_minimum_required(VERSION 3.16)
+    project(KTextEditorPythonBindings LANGUAGES CXX)
+    set(REQUIRED_QT_VERSION "6.11.0")
+    set(KF_VERSION "6.30.0")
+
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    # Find Python3
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+    # Find Qt, KF6, Shiboken
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
+    find_package(KF6TextEditor REQUIRED)
+    find_package(Shiboken6 REQUIRED)
+    find_package(PySide6 REQUIRED)
+
+    # ecm_generate_python_bindings
+    include(ECMGeneratePythonBindings)
+
+    set(bindings_library "KTextEditor")
+
+    # TODO upstream to https://invent.kde.org/frameworks/ktexteditor
+    # as /python/bindings.xml etc
+    set(wrapped_header ${CMAKE_SOURCE_DIR}/bindings.h)
+    set(typesystem_file ${CMAKE_SOURCE_DIR}/bindings.xml)
+
+    set(generated_sources
+        ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_wrapper.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_module_wrapper.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_editor_wrapper.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_document_wrapper.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_view_wrapper.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_mainwindow_wrapper.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/KTextEditor/ktexteditor_cursor_wrapper.cpp
+        # TODO more?
+    )
+
+    # https://api.kde.org/ecm/module/ECMGeneratePythonBindings.html
+    ecm_generate_python_bindings(
+        PACKAGE_NAME ${bindings_library}
+        VERSION ${KF_VERSION}
+        WRAPPED_HEADER ${wrapped_header}
+        TYPESYSTEM ${typesystem_file}
+        GENERATED_SOURCES ${generated_sources}
+        DEPENDENCIES KF6::TextEditor
+        QT_VERSION ${REQUIRED_QT_VERSION}
+        HOMEPAGE_URL "https://invent.kde.org/frameworks/ktexteditor"
+        ISSUES_URL "https://bugs.kde.org/describecomponents.cgi?product=frameworks-ktexteditor"
+        AUTHOR "The KDE Community"
+        README ./README.md
+    )
+
+    target_link_libraries(${bindings_library}
+        PRIVATE
+            KF6::TextEditor
+            Qt6::Core
+            Qt6::Widgets
+            Qt6::Gui
+    )
+
+    target_include_directories(${bindings_library}
+        PRIVATE
+            $<TARGET_PROPERTY:Shiboken6::libshiboken,INTERFACE_INCLUDE_DIRECTORIES>
+            $<TARGET_PROPERTY:PySide6::pyside6,INTERFACE_INCLUDE_DIRECTORIES>
+            ${CMAKE_BINARY_DIR}  # where the generated *_python.h files live
+    )
+
+    install(TARGETS ${bindings_library} LIBRARY DESTINATION "${KDE_INSTALL_LIBDIR}/python-kf6")
+
+currently that installs the compiled .so file to `$out/lib/python-kf6/KTextEditor.cpython-*.so`  
+which i tried to fix in my default.nix file with
+
+      postInstall = ''
+        mkdir -p $out/${pkgs.python3.sitePackages}
+        mv -v $out/lib/python-kf6/KTextEditor.cpython-*.so $out/${pkgs.python3.sitePackages}
+        rmdir $out/lib/python-kf6
+      '';
+
+but cmake should install the .so file to the correct location
+
+i guess currently the `python -c "import KTextEditor"` command fails, because the package metadata is missing in `$out/${pkgs.python3.sitePackages}` (`$out/lib/python3.14/site-packages`). who is responsible to generate these metadata files? cmake or some python build tool (pip, etc)? are there some ready-to-use cmake modules that take care of generating these metadata files (and also installing the .so file to the correct location)? i want to avoid re-inventing this wheel with `add_custom_command`
+
+## Response:
+
+9/21/2026, 10:09:47 AM
+
+> **Searched 3 websites**
+>
+> Worked for a few seconds
+
+Yes - and your diagnosis is slightly off in one important respect:
+
+**the `.dist-info` / package metadata is not what makes `import KTextEditor` work.** The immediate problem is that the `.so` is being installed to:
+
+``` text
+$out/lib/python-kf6/KTextEditor.cpython-*.so
+```
+
+while Python searches something like:
+
+``` text
+$out/lib/python3.14/site-packages/
+```
+
+The metadata is needed for a *proper Python distribution*, but it isn't what makes the module importable.
+
+More importantly, **you don't need to invent any Python-package installation machinery in CMake.** `ECMGeneratePythonBindings` already generates the extension target; `scikit-build-core` is specifically designed to take a CMake project like this and turn its CMake install tree into a Python wheel. ([KDE API Reference](https://api.kde.org/ecm/module/ECMGeneratePythonBindings.html?utm_source=chatgpt.com))
+
+### The nice solution
+
+With `scikit-build-core`, CMake's install destination is interpreted relative to Python's `site-packages`. Its documentation explicitly recommends:
+
+``` cmake
+install(TARGETS _module DESTINATION mypackage)
+```
+
+which puts the extension into `site-packages/mypackage/` in the resulting wheel. ([GitHub](https://github.com/scikit-build/scikit-build-core?utm_source=chatgpt.com))
+
+So I would change your final line from:
+
+``` cmake
+install(TARGETS ${bindings_library} LIBRARY DESTINATION "${KDE_INSTALL_LIBDIR}/python-kf6")
+```
+
+to simply:
+
+``` cmake
+install(
+    TARGETS ${bindings_library}
+    LIBRARY DESTINATION KTextEditor
+)
+```
+
+Then:
+
+``` text
+KTextEditor.cpython-314-x86_64-linux-gnu.so
+```
+
+ends up as:
+
+``` text
+site-packages/
+└── KTextEditor/
+    └── KTextEditor.cpython-314-x86_64-linux-gnu.so
+```
+
+There is one catch: **you currently have a top-level extension module named `KTextEditor`, not necessarily a Python package named `KTextEditor`.**
+
+If Shiboken generates only:
+
+``` text
+KTextEditor.cpython-*.so
+```
+
+then the desired layout is actually:
+
+``` text
+site-packages/
+└── KTextEditor.cpython-*.so
+```
+
+and CMake should use:
+
+``` cmake
+install(
+    TARGETS ${bindings_library}
+    LIBRARY DESTINATION .
+)
+```
+
+This makes:
+
+``` python
+import KTextEditor
+```
+
+work.
+
+------------------------------------------------------------------------
+
+## What I would do with your project
+
+I'd use `scikit-build-core` and let **CMake remain responsible for installing the compiled extension**, while `scikit-build-core` is responsible for producing the Python wheel and its `.dist-info` metadata.
+
+Your `pyproject.toml` can therefore be:
+
+\*\*document: \*\*
+
+\[build-system\]  
+requires = \[  
+"scikit-build-core",  
+\]  
+build-backend = "scikit_build_core.build"
+
+\[project\]  
+name = "ktexteditor-pyside6"  
+version = "0.1.0"  
+description = "PySide6 bindings for KDE KTextEditor"  
+requires-python = "\>=3.10"  
+dependencies = \[  
+"PySide6",  
+\]
+
+\[tool.scikit-build\]  
+wheel.packages = \[\]  
+wheel.cmake = true
+
+\[tool.scikit-build.cmake\]  
+build-type = "Release"
+
+The important line here is:
+
+``` toml
+wheel.packages = []
+```
+
+That tells scikit-build-core **not to go looking for Python source packages** such as `src/ktexteditor_pyside6/`. Instead, everything comes from CMake's `install()` rules. This is explicitly supported by scikit-build-core. ([Scikit-Build Core](https://scikit-build-core.readthedocs.io/en/stable/configuration/?utm_source=chatgpt.com))
+
+Then change the end of your CMakeLists.txt to:
+
+``` cmake
+install(
+    TARGETS ${bindings_library}
+    LIBRARY DESTINATION .
+)
+```
+
+That's the key change.
+
+------------------------------------------------------------------------
+
+## But there's another thing I'd change
+
+Your current:
+
+``` cmake
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+```
+
+is broader than necessary.
+
+For a Python extension, scikit-build-core's documentation recommends:
+
+``` cmake
+find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+```
+
+rather than requesting the complete `Development` component, since you aren't embedding Python. ([Scikit-Build Core](https://scikit-build-core.readthedocs.io/en/stable/guide/cmakelists.html?utm_source=chatgpt.com))
+
+So:
+
+``` cmake
+find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+```
+
+would be preferable.
+
+However, **don't blindly replace `Python3` everywhere yet**, because `ECMGeneratePythonBindings` / `Shiboken6` may currently depend on the `Python3_*` variables being established. We can clean that up once the basic packaging works.
+
+------------------------------------------------------------------------
+
+## And Nix gets much simpler
+
+Your `default.nix` can become approximately:
+
+``` nix
+{ lib
+, python3Packages
+, qt6
+, kdePackages
+}:
+
+python3Packages.buildPythonPackage {
+  pname = "ktexteditor-pyside6";
+  version = "0.1.0";
+
+  src = ./.;
+
+  pyproject = true;
+
+  nativeBuildInputs = with python3Packages; [
+    scikit-build-core
+    cmake
+    shiboken6
+  ];
+
+  dependencies = with python3Packages; [
+    pyside6
+  ];
+
+  buildInputs = [
+    qt6.qtbase
+    kdePackages.ktexteditor
+  ];
+
+  dontWrapQtApps = true;
+}
+```
+
+The exact Nix attribute names may need adjusting to your nixpkgs revision, but conceptually that's the separation we want:
+
+| Responsibility | Tool |
+|----|----|
+| Generate C++ wrappers | Shiboken6 |
+| Compile `.so` | CMake |
+| Decide where CMake's install tree goes in the wheel | scikit-build-core |
+| Generate `*.dist-info` | Python build backend |
+| Build Nix package | `buildPythonPackage` |
+| Put package on `PYTHONPATH` | `python3.withPackages` |
+
+`scikit-build-core` specifically exists to bridge this CMake/Python packaging boundary. ([GitHub](https://github.com/scikit-build/scikit-build-core?utm_source=chatgpt.com))
+
+### One important distinction
+
+You **don't need to create**:
+
+``` text
+KTextEditor/
+    __init__.py
+```
+
+just to make this work.
+
+A CPython extension can be a top-level module:
+
+``` text
+site-packages/
+    KTextEditor.cpython-314-x86_64-linux-gnu.so
+```
+
+and:
+
+``` python
+import KTextEditor
+```
+
+works perfectly well.
+
+So given your current Shiboken output, I'd actually start with:
+
+``` cmake
+install(
+    TARGETS ${bindings_library}
+    LIBRARY DESTINATION .
+)
+```
+
+rather than putting it into a `KTextEditor/` directory.
+
+That is the **smallest possible change** to your currently working CMake build, and lets scikit-build-core handle the Python packaging metadata instead of us implementing it ourselves.
+
+------------------------------------------------------------------------
+
+**Sources:**
+
+- [ECMGeneratePythonBindings — Extra CMake Modules 6.29.0 documentation](https://api.kde.org/ecm/module/ECMGeneratePythonBindings.html?utm_source=chatgpt.com)
+- [GitHub - scikit-build/scikit-build-core: A next generation Python CMake adaptor and Python API for plugins · GitHub](https://github.com/scikit-build/scikit-build-core?utm_source=chatgpt.com)
+- [Configuration - scikit-build-core 1.0.3 documentation](https://scikit-build-core.readthedocs.io/en/stable/configuration/?utm_source=chatgpt.com)
+
+## Prompt:
+
+9/21/2026, 10:25:25 AM
+
+now the cmake build fails with
+
+    -- Shiboken6Config: Using default python: .abi3
+    -- Found Python: /nix/store/3n4qphl9s728sz8frmpqqrv9b1m87g68-python3-3.14.7/bin/python3.14 (found suitable version "3.14.7", minimum required is "3") found components: Interpreter Development.Module
+    -- PYTHON_LIMITED_LIBRARIES: 
+    -- SHIBOKEN_PYTHON_INCLUDE_DIRS computed to value: '/nix/store/3n4qphl9s728sz8frmpqqrv9b1m87g68-python3-3.14.7/include/python3.14'
+    -- SHIBOKEN_PYTHON_LIBRARIES computed to value: ''
+    -- libshiboken built for Release
+    CMake Error at /nix/store/kgffmmqvgpj3vnd1svka3l85m26gb7mv-extra-cmake-modules-6.29.0/share/ECM/modules/ECMGeneratePythonBindings.cmake:79 (message):
+      The 'build' Python module is needed for ECMGeneratePythonBindings
+    Call Stack (most recent call first):
+      CMakeLists.txt:47 (ecm_generate_python_bindings)
+
+with this default.nix file
+
+    {
+      lib,
+      buildPythonPackage,
+      fetchFromGitHub,
+      cmake,
+      scikit-build-core,
+      build,
+      pyside6,
+      shiboken6,
+      qt6,
+      kdePackages,
+    }:
+
+    buildPythonPackage {
+      pname = "ktexteditor-pyside6";
+      version = "0.1.0";
+
+      src = ./.;
+      # TODO
+      /*
+      src = fetchFromGitHub {
+        owner = "milahu";
+        repo = "ktexteditor-pyside6";
+        tag = "";
+        hash = "";
+      };
+      */
+
+      pyproject = true;
+
+      nativeBuildInputs = [
+        cmake
+        kdePackages.extra-cmake-modules # ECMGeneratePythonBindings.cmake
+        scikit-build-core
+        shiboken6
+        # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
+        build
+      ];
+
+      dependencies = [
+        pyside6
+        # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
+        build
+      ];
+
+      buildInputs = [
+        qt6.qtbase
+        kdePackages.ktexteditor
+        # fix: The 'build' Python module is needed for ECMGeneratePythonBindings
+        build
+      ];
+
+      dontWrapQtApps = true;
+
+      # help cmake find ${kdePackages.extra-cmake-modules}/share/ECM/modules/ECMGeneratePythonBindings.cmake
+      cmakeFlags = [
+        "-DCMAKE_MODULE_PATH=${kdePackages.extra-cmake-modules}/share/ECM/modules"
+        # "-DKDE_EXTRA_CMAKE_MODULES=${kdePackages.extra-cmake-modules}/share/ECM/modules"
+      ];
+    }
+
+i really do believe that python should drive the build... because currently, cmake is using the raw python package (without any python dependencies) so when cmake calls the python interpreter, then python dependencies like `build` are missing...
+
+## Response:
+
+9/21/2026, 10:25:25 AM
+
+Yes — **your instinct is correct**, and the error is a good illustration of why.
+
+The important distinction is that `build` is a **Python build-time dependency**, not a CMake dependency. `ECMGeneratePythonBindings.cmake` is invoking the Python interpreter and expecting:
+
+``` python
+import build
+```
+
+to work.
+
+Your current Nix expression has `build` in `nativeBuildInputs`, but that does **not necessarily mean that the Python interpreter CMake found is the Python interpreter from an environment containing `build`**.
+
+In particular, this line:
+
+``` cmake
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+```
+
+lets CMake independently discover a Python executable. With `buildPythonPackage`, you want the PEP 517 build environment to be the thing driving this.
+
+### The simplest fix
+
+Don't put `build` in `dependencies` or `buildInputs`. It belongs in the Python build environment:
+
+``` nix
+nativeBuildInputs = [
+  cmake
+  kdePackages.extra-cmake-modules
+  scikit-build-core
+  shiboken6
+  build
+];
+```
+
+You already have that. The problem is that **ECM's `find_package(Python ...)` is finding a different Python**.
+
+The clue is:
+
+``` text
+Found Python:
+/nix/store/3n4qphl9s728sz8frmpqqrv9b1m87g68-python3-3.14.7/bin/python3.14
+```
+
+whereas Nix's Python packaging machinery normally gives you a Python environment containing the build dependencies.
+
+## Make CMake use the Python environment explicitly
+
+In `default.nix`, use `python3.withPackages` to construct the exact interpreter that CMake should use:
+
+``` nix
+{
+  lib,
+  buildPythonPackage,
+  python3,
+  cmake,
+  scikit-build-core,
+  build,
+  pyside6,
+  shiboken6,
+  qt6,
+  kdePackages,
+}:
+
+let
+  pythonEnv = python3.withPackages (ps: [
+    build
+    pyside6
+    shiboken6
+  ]);
+in
+buildPythonPackage {
+  pname = "ktexteditor-pyside6";
+  version = "0.1.0";
+
+  src = ./.;
+
+  pyproject = true;
+
+  nativeBuildInputs = [
+    cmake
+    kdePackages.extra-cmake-modules
+    scikit-build-core
+    pythonEnv
+  ];
+
+  dependencies = [
+    pyside6
+  ];
+
+  buildInputs = [
+    qt6.qtbase
+    kdePackages.ktexteditor
+  ];
+
+  dontWrapQtApps = true;
+
+  cmakeFlags = [
+    "-DPython3_EXECUTABLE=${pythonEnv}/bin/python"
+    "-DPython_EXECUTABLE=${pythonEnv}/bin/python"
+    "-DCMAKE_MODULE_PATH=${kdePackages.extra-cmake-modules}/share/ECM/modules"
+  ];
+}
+```
+
+But there's an even more important issue here.
+
+## I would actually change your CMakeLists.txt
+
+You currently have:
+
+``` cmake
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+```
+
+Change it to:
+
+``` cmake
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+
+message(STATUS "Python executable: ${Python3_EXECUTABLE}")
+
+execute_process(
+    COMMAND "${Python3_EXECUTABLE}" -c "import build; print(build.__file__)"
+    RESULT_VARIABLE PYTHON_BUILD_RESULT
+    OUTPUT_VARIABLE PYTHON_BUILD_LOCATION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT PYTHON_BUILD_RESULT EQUAL 0)
+    message(FATAL_ERROR
+        "Python interpreter ${Python3_EXECUTABLE} cannot import the 'build' module"
+    )
+endif()
+
+message(STATUS "Python 'build' module: ${PYTHON_BUILD_LOCATION}")
+```
+
+Now CMake will explicitly tell us which Python it is using and whether that Python can actually import `build`.
+
+You should see something like:
+
+``` text
+-- Python executable: /nix/store/...-python3-3.14.7-env/bin/python
+-- Python 'build' module: /nix/store/.../site-packages/build/__init__.py
+```
+
+If instead you see:
+
+``` text
+-- Python executable: /nix/store/...-python3-3.14.7/bin/python3.14
+```
+
+then we've proven the problem: CMake is bypassing the Python environment.
+
+------------------------------------------------------------------------
+
+# But there's a bigger architectural point
+
+I agree with your statement:
+
+> i really do believe that python should drive the build
+
+That's exactly what `pyproject.toml` + `scikit-build-core` is supposed to accomplish.
+
+The intended stack is:
+
+``` text
+                pip / nix buildPythonPackage
+                         │
+                         ▼
+                   pyproject.toml
+                         │
+                         ▼
+                 scikit-build-core
+                         │
+                         ▼
+                      CMake
+                    ┌────┴────┐
+                    │         │
+                    ▼         ▼
+                Shiboken    C++ compiler
+                    │         │
+                    └────┬────┘
+                         ▼
+                  KTextEditor.so
+```
+
+Python is the **packaging/build frontend**.
+
+CMake is the **native build backend**.
+
+Shiboken is part of the native build.
+
+That's a perfectly normal architecture for a Python package containing a C++ extension.
+
+------------------------------------------------------------------------
+
+## One thing I would *not* do
+
+Don't add:
+
+``` nix
+build
+```
+
+to all three:
+
+``` nix
+nativeBuildInputs
+dependencies
+buildInputs
+```
+
+That doesn't solve the underlying problem and mixes three different dependency concepts.
+
+`build` should be available **while the package is being built**, so `nativeBuildInputs` is the appropriate Nix category.
+
+Similarly:
+
+``` nix
+pyside6
+```
+
+is a runtime dependency, so:
+
+``` nix
+dependencies = [
+  pyside6
+];
+```
+
+is appropriate.
+
+And:
+
+``` nix
+qt6.qtbase
+kdePackages.ktexteditor
+```
+
+are native libraries needed to compile/link the extension:
+
+``` nix
+buildInputs = [
+  qt6.qtbase
+  kdePackages.ktexteditor
+];
+```
+
+That's the clean separation.
+
+------------------------------------------------------------------------
+
+### One more thing: `ECMGeneratePythonBindings`
+
+There is an interesting complication here: **ECM itself is invoking Python during the CMake configuration step**.
+
+So `scikit-build-core` isn't going to magically make `build` visible to that Python unless the interpreter CMake finds is the right one.
+
+That's why I'd first add the diagnostic above.
+
+If it confirms that CMake is finding the wrong Python, we can make the `pyproject.toml`/Nix setup cleaner rather than accumulating more `cmakeFlags`.
+
+And I think that is the right next step: **make the Python interpreter used by `ECMGeneratePythonBindings` be exactly the Python environment created for the package build.**
+
+## Prompt:
+
+9/21/2026, 10:32:43 AM
+
+ok, this is ugly but seems to work:
+
+    -- Shiboken6Config: Using default python: .abi3
+    -- Found Python: /nix/store/5wyliv3rw1sbiglbkvvaz0vb24wsmbpl-python3-3.14.7-env/bin/python (found suitable version "3.14.7", minimum required is "3") found components: Interpreter Development.Module
+    -- PYTHON_LIMITED_LIBRARIES: 
+    -- SHIBOKEN_PYTHON_INCLUDE_DIRS computed to value: '/nix/store/5wyliv3rw1sbiglbkvvaz0vb24wsmbpl-python3-3.14.7-env/include/python3.14'
+    -- SHIBOKEN_PYTHON_LIBRARIES computed to value: ''
+    -- libshiboken built for Release
+    -- Configuring done (8.0s)
+    -- Generating done (0.0s)
+
+but now the build fails with
+
+    -- Build files have been written to: /build/ktexteditor-pyside6/build
+    cmake: enabled parallel building
+    cmake: enabled parallel installing
+    Running phase: buildPhase
+    Executing pypaBuildPhase
+    Creating a wheel...
+    pypa build flags: --no-isolation --outdir dist/ --wheel -Ccmake.args=-DCMAKE_MODULE_PATH=/nix/store/kgffmmqvgpj3vnd1svka3l85m26gb7mv-extra-cmake-modules-6.29.0/share/ECM/modules -Ccmake.args=-DPython3_EXECUTABLE=/nix/store/5wyliv3rw1sbiglbkvvaz0vb24wsmbpl-python3-3.14.7-env/bin/python -Ccmake.args=-DPython_EXECUTABLE=/nix/store/5wyliv3rw1sbiglbkvvaz0vb24wsmbpl-python3-3.14.7-env/bin/python -Ccmake.args=-DCMAKE_MODULE_PATH=/nix/store/kgffmmqvgpj3vnd1svka3l85m26gb7mv-extra-cmake-modules-6.29.0/share/ECM/modules -Ccmake.args=-DKDE_INSTALL_EXECROOTDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0 -Ccmake.args=-DKDE_INSTALL_BINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/bin -Ccmake.args=-DKDE_INSTALL_SBINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/sbin -Ccmake.args=-DKDE_INSTALL_LIBDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib -Ccmake.args=-DKDE_INSTALL_LIBEXECDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/libexec -Ccmake.args=-DKDE_INSTALL_CMAKEPACKAGEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/cmake -Ccmake.args=-DKDE_INSTALL_QTPLUGINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/qt-6/plugins -Ccmake.args=-DKDE_INSTALL_PLUGINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/qt-6/plugins -Ccmake.args=-DKDE_INSTALL_QMLDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/qt-6/qml -Ccmake.args=-DKDE_INSTALL_INCLUDEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/include -Ccmake.args=-DKDE_INSTALL_LOCALSTATEDIR=/var -Ccmake.args=-DKDE_INSTALL_SHAREDSTATEDIR=/com -Ccmake.args=-DKDE_INSTALL_DATAROOTDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share -Ccmake.args=-DKDE_INSTALL_DATADIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share -Ccmake.args=-DKDE_INSTALL_DOCBUNDLEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/doc/HTML -Ccmake.args=-DKDE_INSTALL_KCFGDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/config.kcfg -Ccmake.args=-DKDE_INSTALL_KCONFUPDATEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kconf_update -Ccmake.args=-DKDE_INSTALL_KAPPTEMPLATESDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kdevappwizard/templates -Ccmake.args=-DKDE_INSTALL_KFILETEMPLATESDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kdevfiletemplates/templates -Ccmake.args=-DKDE_INSTALL_KXMLGUIDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kxmlgui5 -Ccmake.args=-DKDE_INSTALL_KNOTIFYRCDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/knotifications6 -Ccmake.args=-DKDE_INSTALL_ICONDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/icons -Ccmake.args=-DKDE_INSTALL_LOCALEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/locale -Ccmake.args=-DKDE_INSTALL_SOUNDDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/sounds -Ccmake.args=-DKDE_INSTALL_TEMPLATEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/templates -Ccmake.args=-DKDE_INSTALL_WALLPAPERDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/wallpapers -Ccmake.args=-DKDE_INSTALL_APPDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/applications -Ccmake.args=-DKDE_INSTALL_DESKTOPDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/desktop-directories -Ccmake.args=-DKDE_INSTALL_MIMEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/mime/packages -Ccmake.args=-DKDE_INSTALL_METAINFODIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/metainfo -Ccmake.args=-DKDE_INSTALL_QTQCHDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/doc/qch -Ccmake.args=-DKDE_INSTALL_QCHDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/doc/qch -Ccmake.args=-DKDE_INSTALL_MANDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/man -Ccmake.args=-DKDE_INSTALL_INFODIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/info -Ccmake.args=-DKDE_INSTALL_DBUSDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1 -Ccmake.args=-DKDE_INSTALL_DBUSINTERFACEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1/interfaces -Ccmake.args=-DKDE_INSTALL_DBUSSERVICEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1/services -Ccmake.args=-DKDE_INSTALL_DBUSSYSTEMSERVICEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1/system-services -Ccmake.args=-DKDE_INSTALL_SYSCONFDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/etc -Ccmake.args=-DKDE_INSTALL_CONFDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/etc/xdg -Ccmake.args=-DKDE_INSTALL_AUTOSTARTDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/etc/xdg/autostart -Ccmake.args=-DKDE_INSTALL_LOGGINGCATEGORIESDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/qlogging-categories6 -Ccmake.args=-DKDE_INSTALL_SYSTEMDUNITDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/systemd -Ccmake.args=-DKDE_INSTALL_SYSTEMDUSERUNITDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/systemd/user -Ccmake.args=-DKDE_INSTALL_EXECROOTDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0 -Ccmake.args=-DKDE_INSTALL_BINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/bin -Ccmake.args=-DKDE_INSTALL_SBINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/sbin -Ccmake.args=-DKDE_INSTALL_LIBDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib -Ccmake.args=-DKDE_INSTALL_LIBEXECDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/libexec -Ccmake.args=-DKDE_INSTALL_CMAKEPACKAGEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/cmake -Ccmake.args=-DKDE_INSTALL_QTPLUGINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/qt-6/plugins -Ccmake.args=-DKDE_INSTALL_PLUGINDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/qt-6/plugins -Ccmake.args=-DKDE_INSTALL_QMLDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/qt-6/qml -Ccmake.args=-DKDE_INSTALL_INCLUDEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/include -Ccmake.args=-DKDE_INSTALL_LOCALSTATEDIR=/var -Ccmake.args=-DKDE_INSTALL_SHAREDSTATEDIR=/com -Ccmake.args=-DKDE_INSTALL_DATAROOTDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share -Ccmake.args=-DKDE_INSTALL_DATADIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share -Ccmake.args=-DKDE_INSTALL_DOCBUNDLEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/doc/HTML -Ccmake.args=-DKDE_INSTALL_KCFGDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/config.kcfg -Ccmake.args=-DKDE_INSTALL_KCONFUPDATEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kconf_update -Ccmake.args=-DKDE_INSTALL_KAPPTEMPLATESDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kdevappwizard/templates -Ccmake.args=-DKDE_INSTALL_KFILETEMPLATESDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kdevfiletemplates/templates -Ccmake.args=-DKDE_INSTALL_KXMLGUIDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/kxmlgui5 -Ccmake.args=-DKDE_INSTALL_KNOTIFYRCDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/knotifications6 -Ccmake.args=-DKDE_INSTALL_ICONDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/icons -Ccmake.args=-DKDE_INSTALL_LOCALEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/locale -Ccmake.args=-DKDE_INSTALL_SOUNDDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/sounds -Ccmake.args=-DKDE_INSTALL_TEMPLATEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/templates -Ccmake.args=-DKDE_INSTALL_WALLPAPERDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/wallpapers -Ccmake.args=-DKDE_INSTALL_APPDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/applications -Ccmake.args=-DKDE_INSTALL_DESKTOPDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/desktop-directories -Ccmake.args=-DKDE_INSTALL_MIMEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/mime/packages -Ccmake.args=-DKDE_INSTALL_METAINFODIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/metainfo -Ccmake.args=-DKDE_INSTALL_QTQCHDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/doc/qch -Ccmake.args=-DKDE_INSTALL_QCHDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/doc/qch -Ccmake.args=-DKDE_INSTALL_MANDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/man -Ccmake.args=-DKDE_INSTALL_INFODIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/info -Ccmake.args=-DKDE_INSTALL_DBUSDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1 -Ccmake.args=-DKDE_INSTALL_DBUSINTERFACEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1/interfaces -Ccmake.args=-DKDE_INSTALL_DBUSSERVICEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1/services -Ccmake.args=-DKDE_INSTALL_DBUSSYSTEMSERVICEDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/dbus-1/system-services -Ccmake.args=-DKDE_INSTALL_SYSCONFDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/etc -Ccmake.args=-DKDE_INSTALL_CONFDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/etc/xdg -Ccmake.args=-DKDE_INSTALL_AUTOSTARTDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/etc/xdg/autostart -Ccmake.args=-DKDE_INSTALL_LOGGINGCATEGORIESDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/qlogging-categories6 -Ccmake.args=-DKDE_INSTALL_SYSTEMDUNITDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/lib/systemd -Ccmake.args=-DKDE_INSTALL_SYSTEMDUSERUNITDIR=/nix/store/hba4152xcnzkynx76d1ljnbgzlzdgvjk-python3.14-ktexteditor-pyside6-0.1.0/share/systemd/user
+    ERROR Source /build/ktexteditor-pyside6/build does not appear to be a Python project: no pyproject.toml or setup.py
+
+## Response:
+
+9/21/2026, 10:32:44 AM
+
+> **Searched 5 websites**
+>
+> Worked for 5s
+
+Yes - this error is actually a **Nix build-phase interaction**, not a CMake/`pyproject.toml` problem.
+
+The important line is:
+
+``` text
+Executing pypaBuildPhase
+...
+ERROR Source /build/ktexteditor-pyside6/build does not appear to be a Python project:
+no pyproject.toml or setup.py
+```
+
+Your `pyproject.toml` is presumably in:
+
+``` text
+/build/ktexteditor-pyside6/pyproject.toml
+```
+
+but Nix's CMake setup hook has already changed the build directory to:
+
+``` text
+/build/ktexteditor-pyside6/build
+```
+
+and then `pypaBuildPhase` runs there.
+
+This exact class of problem is known with `buildPythonPackage` + CMake + scikit-build: you generally want **scikit-build-core to own the CMake invocation**, rather than letting the Nix CMake hooks configure/build/install it first. ([NixOS Discourse](https://discourse.nixos.org/t/building-python-package-with-scikit-build-core-and-cmake-dependencies-die-python/69665?utm_source=chatgpt.com))
+
+### The fix
+
+Add:
+
+``` nix
+dontUseCmakeConfigure = true;
+dontUseCmakeBuild = true;
+dontUseCmakeInstall = true;
+```
+
+So your derivation should look roughly like:
+
+``` nix
+{
+  lib,
+  buildPythonPackage,
+  cmake,
+  scikit-build-core,
+  build,
+  pyside6,
+  shiboken6,
+  qt6,
+  kdePackages,
+}:
+
+buildPythonPackage {
+  pname = "ktexteditor-pyside6";
+  version = "0.1.0";
+
+  src = ./.;
+
+  pyproject = true;
+
+  nativeBuildInputs = [
+    cmake
+    scikit-build-core
+    kdePackages.extra-cmake-modules
+    shiboken6
+    build
+  ];
+
+  dependencies = [
+    pyside6
+  ];
+
+  buildInputs = [
+    qt6.qtbase
+    kdePackages.ktexteditor
+  ];
+
+  dontUseCmakeConfigure = true;
+  dontUseCmakeBuild = true;
+  dontUseCmakeInstall = true;
+
+  dontWrapQtApps = true;
+
+  cmakeFlags = [
+    "-DCMAKE_MODULE_PATH=${kdePackages.extra-cmake-modules}/share/ECM/modules"
+  ];
+}
+```
+
+The Nixpkgs documentation confirms that `pyproject = true` activates `pypaBuildHook`, which is the mechanism intended to build the Python project from `pyproject.toml`. ([GitHub](https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/python.section.md?utm_source=chatgpt.com))
+
+There is one more detail I'd change, though.
+
+## Use `CMAKE_ARGS`, not `cmakeFlags`
+
+Since **scikit-build-core is now invoking CMake**, its configuration should be passed through `CMAKE_ARGS`, rather than relying on Nix's CMake hook machinery.
+
+For example:
+
+``` nix
+CMAKE_ARGS = [
+  "-DCMAKE_MODULE_PATH=${kdePackages.extra-cmake-modules}/share/ECM/modules"
+];
+```
+
+So I'd make the final derivation:
+
+``` nix
+{
+  lib,
+  buildPythonPackage,
+  cmake,
+  scikit-build-core,
+  build,
+  pyside6,
+  shiboken6,
+  qt6,
+  kdePackages,
+}:
+
+buildPythonPackage {
+  pname = "ktexteditor-pyside6";
+  version = "0.1.0";
+
+  src = ./.;
+
+  pyproject = true;
+
+  nativeBuildInputs = [
+    cmake
+    scikit-build-core
+    kdePackages.extra-cmake-modules
+    shiboken6
+    build
+  ];
+
+  dependencies = [
+    pyside6
+  ];
+
+  buildInputs = [
+    qt6.qtbase
+    kdePackages.ktexteditor
+  ];
+
+  # scikit-build-core, rather than Nix's cmake setup hook,
+  # drives the CMake configure/build/install process.
+  dontUseCmakeConfigure = true;
+  dontUseCmakeBuild = true;
+  dontUseCmakeInstall = true;
+
+  CMAKE_ARGS = [
+    "-DCMAKE_MODULE_PATH=${kdePackages.extra-cmake-modules}/share/ECM/modules"
+  ];
+
+  dontWrapQtApps = true;
+}
+```
+
+This is the architecture you were aiming for earlier:
+
+``` text
+buildPythonPackage
+        │
+        ▼
+   pypaBuildHook
+        │
+        ▼
+  python -m build
+        │
+        ▼
+ scikit-build-core
+        │
+        ▼
+      CMake
+        │
+        ├── Shiboken6
+        ├── Qt6
+        ├── KF6 TextEditor
+        └── ECMGeneratePythonBindings
+        │
+        ▼
+      wheel
+        │
+        ▼
+buildPythonPackage installs wheel
+```
+
+rather than the problematic:
+
+``` text
+buildPythonPackage
+        │
+        ▼
+ Nix CMake configure
+        │
+        ▼
+ /build/.../build/
+        │
+        ▼
+ Nix pypaBuildPhase
+        │
+        ▼
+ python -m build .
+        │
+        └── 💥 no pyproject.toml here
+```
+
+### One other important point
+
+I would **not** put `build` in `dependencies` or `buildInputs`.
+
+`build` is a **build-system dependency**, not a runtime dependency. Your observation that ECM's `ECMGeneratePythonBindings.cmake` imports Python's `build` module is correct, but it belongs in the build environment:
+
+``` nix
+nativeBuildInputs = [
+  ...
+  build
+];
+```
+
+and nowhere else.
+
+The fact that ECM currently requires the Python `build` module is slightly awkward, but your workaround of making the CMake-invoked Python be the Nix Python environment containing `build` is reasonable.
+
+Finally, your `pyproject.toml` needs to declare the scikit-build-core backend. Conceptually it should contain:
+
+``` toml
+[build-system]
+requires = [
+    "scikit-build-core",
+]
+build-backend = "scikit_build_core.build"
+```
+
+You **do not** need to put `cmake`, `shiboken6`, `PySide6`, ECM, Qt, or KTextEditor into `build-system.requires` for the Nix build. Those are Nix dependencies and should remain in `nativeBuildInputs`/`buildInputs`.
+
+So I think you're actually very close now: **let `pypaBuildPhase → scikit-build-core → CMake` be the single build pipeline, and disable the three Nix CMake phases.** This is also the pattern used in current Nix packaging examples for scikit-build-core projects. ([NixOS Discourse](https://discourse.nixos.org/t/building-python-package-with-scikit-build-core-and-cmake-dependencies-die-python/69665?utm_source=chatgpt.com))
+
+------------------------------------------------------------------------
+
+**Sources:**
+
+- [Building Python package with scikit-build-core and CMake dependencies (die-python) - Help - NixOS Discourse](https://discourse.nixos.org/t/building-python-package-with-scikit-build-core-and-cmake-dependencies-die-python/69665?utm_source=chatgpt.com)
+- [nixpkgs/doc/languages-frameworks/python.section.md at master · NixOS/nixpkgs · GitHub](https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/python.section.md?utm_source=chatgpt.com)
 
 ------------------------------------------------------------------------
 
