@@ -65,3 +65,9 @@ A window should show a KTextEditor view with some text.
 
 Edit `bindings.xml` to add more classes, enums, or function tweaks.
 Shiboken will generate wrappers for **all** methods of classes you list, unless modified.
+
+## related
+
+- [add python bindings ktexteditor#24](https://invent.kde.org/frameworks/ktexteditor/-/issues/24)
+- [looking for a code editor widget for Qt for Python](https://forum.qt.io/topic/125587/looking-for-a-code-editor-widget-for-qt-for-python)
+- [Creating Python bindings for KSyntaxHighlighter with shiboken](https://forum.qt.io/topic/141648/creating-python-bindings-for-ksyntaxhighlighter-with-shiboken)
