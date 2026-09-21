@@ -1,0 +1,21 @@
+[project]
+name = "ktexteditor-pyside6"
+version = "0.1.0"
+description = "PySide6 bindings for KDE KTextEditor"
+requires-python = ">=3.10"
+dependencies = [
+    "PySide6",
+]
+
+[build-system]
+requires = [
+    "scikit-build-core",
+]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+wheel.packages = []
+wheel.cmake = true
+
+[tool.scikit-build.cmake]
+build-type = "Release"
